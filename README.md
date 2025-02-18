@@ -12,9 +12,7 @@ sudo dpkg -i appimagelauncher_2.2.0-travis995.0f91801.bionic_arm64.deb
 
 tutorial:
 https://micro.ros.org/docs/tutorials/core/teensy_with_arduino/
-# for me it was $ export ARDUINO_PATH=/home/pi/Arduino/
-export ARDUINO_PATH=[Your Arduino + Teensiduino path]
 
-cd $ARDUINO_PATH/hardware/teensy/avr/
+cd /home/pi/.arduino15/packages/teensy/hardware/avr/1.59.0
 
 curl https://raw.githubusercontent.com/micro-ROS/micro_ros_arduino/foxy/extras/patching_boards/platform_teensy.txt > platform.txt
