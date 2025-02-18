@@ -1,13 +1,15 @@
-# 🔧 micro-ROS on Teensy with Raspberry pi Setup
+# 🔧 micro-ROS on Teensy with Raspberry pi
 ## 📌 Overview
-This documentation is for setting up micro-ROS a Teensy and connect it to ROS2 running on a Raspberry Pi.
+This documentation is for setting up micro-ROS on a Teensy and connect it to ROS2 running on a Raspberry Pi.
+
 Official tutorial: https://micro.ros.org/docs/tutorials/core/teensy_with_arduino/
 
 ## Hardware and Software
 - Raspberry pi 4 (Ubuntu 24.04)
 - ROS2 - jazzy
 - Teensy 4.0
-- AppImageLauncher 
+- Arduino IDE 2.0
+- AppImageLauncher: appimagelauncher_2.2.0-travis995.0f91801.bionic_arm64.deb
 
 ## 🔹 Core Steps
 1. Install micro-ROS on Raspberry pi.
@@ -19,7 +21,7 @@ Official tutorial: https://micro.ros.org/docs/tutorials/core/teensy_with_arduino
 7. Add micro-ROS on Teensy and patch the micro-ROS environment on Arduino
 
 ## ① Install micro-ROS on Raspberry pi
-- Install the ROS first, we use ROS2 jazzy. [Offical Tutorial](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html)
+- Install the ROS2 first, we use ROS2 jazzy. [Offical Tutorial](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html)
 - Install the micro-ROS agent
 ```
 # Source the environment
@@ -66,7 +68,7 @@ sudo reboot
 sudo dpkg -i appimagelauncher_2.2.0-travis995.0f91801.bionic_arm64.deb
 ```
 ## ④ Download Arduino IDE
-- Download to the same directory with AppImageLauncher. [Linux_arm64_app_image.zip](https://github.com/koendv/arduino-ide-raspberrypi/releases)
+- Download Arduino IDE to the same directory with AppImageLauncher. [Linux_arm64_app_image.zip](https://github.com/koendv/arduino-ide-raspberrypi/releases)
 - Double click the file, if the AppImageLauncher is installed successfully, the Arduino file can be run.
 - Select Integrate & Run
 
@@ -74,7 +76,7 @@ sudo dpkg -i appimagelauncher_2.2.0-travis995.0f91801.bionic_arm64.deb
 
 1. Add the packages for Teensy
 - File &#8594; Preferences &#8594; Additional boards manager URLs
-- add the link: https://www.pjrc.com/teensy/package_teensy_index.json
+- Add the link: https://www.pjrc.com/teensy/package_teensy_index.json
 2. Install Teensy
 - Tools &#8594; Board &#8594; Board Manager
 - Search 'Teensy'. Download Teensy 1.59.0
@@ -110,14 +112,17 @@ cd /home/pi/.arduino15/packages/teensy/hardware/avr/1.59.0
 curl https://raw.githubusercontent.com/micro-ROS/micro_ros_arduino/foxy/extras/patching_boards/platform_teensy.txt > platform.txt
 ```
 ## Test with the example publisher
-- On Arduino: File &#8594; Examples &#8594; micro_ros_arduino, select micro-ros_publisher
+### On Arduino
+- File &#8594; Examples &#8594; micro_ros_arduino &#8594; select micro-ros_publisher
 - Make sure the proper board and port is selected.
-- Verified and Upload the code, reset of the Teensy board required
-----
-- On Raspberry pi
+- Verified and upload the code, reset of the Teensy board required
+
+### On Raspberry pi
 ```
+cd microros_ws
 source install/local_setup.bash
 ros2 run micro_ros_agent micro_ros_agent serial --dev /dev/ttyACM0
+
 # Open a new terminal to see if there is micro_ros_arduino node
 ros2 topic list
 ```
