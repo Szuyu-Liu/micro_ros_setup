@@ -1,0 +1,14 @@
+#include <micro_ros_utilities/string_utilities.h>
+
+// Initialize a string with a specific size
+rosidl_runtime_c__String my_string = micro_ros_string_utilities_init_with_size(50); // Allocates space for 50 characters
+
+// Set the string's value
+const char * data = "Hello, micro-ROS!";
+micro_ros_string_utilities_set(&my_string, data);
+
+// Use the string as needed
+printf("The string is: %s\n", my_string.data);
+
+// When done, free the allocated memory
+micro_ros_string_utilities_destroy(&my_string);
