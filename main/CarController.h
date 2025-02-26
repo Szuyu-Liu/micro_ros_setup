@@ -11,7 +11,7 @@ class CarController {
 public:
     CarController();
     void initialize();
-    void run();
+    void run(String input);
     
 private:
     struct Command {

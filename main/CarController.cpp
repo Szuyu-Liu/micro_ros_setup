@@ -43,15 +43,8 @@ void CarController::initialize() {
     prevTime = micros();
 }
 
-void CarController::run() {
-    if (Serial.available() > 0)
-    {
-      String input = Serial.readStringUntil('\n');
-      if (input) // Prevent unintended reset to 0
-      {
-        parseCommand(input);
-      }
-    }
+void CarController::run(String input) {
+    if (input) parseCommand(input);
     
     float currentAngle = as5047p.readAngleDegree();
     unsigned long currentTime = micros();
@@ -60,10 +53,6 @@ void CarController::run() {
     float currentSpeed = calculateCurrentSpeed(deltaAngle, deltaTime);
 
     if (currentTime - pidSamplingTime >= 1000000 / PID_SAMPLING_FREQUENCY) {
-      Serial.print("current speed: ");
-      Serial.println(currentSpeed);
-      Serial.print("output speed: ");
-      Serial.println(outputSpeed);
         outputSpeed = abs(constrain(pid_motor.step(command.speed, currentSpeed), pidMin, pidMax));
         pidSamplingTime = currentTime;
     }
