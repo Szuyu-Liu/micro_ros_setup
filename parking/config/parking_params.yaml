@@ -1,0 +1,53 @@
+parking_node:
+ ros__parameters:  
+  #Navigation Parameters
+  dist_cms_p: 200
+  car_speed_drive_p: 1.02
+  car_speed_stop_p: 1.0
+  turns_to_cms_p: 0.96
+  
+  #Parking Parameters
+  parking_steer_straight_p: 1.0
+  parking_speed_stop_p: 1.0
+  
+  #Cross Parking Parameters
+  cross_out_advance_p: 10
+  cross_out_advance_right_p: 100
+  cross_out_advance_pit_out_p: 200
+  #cross_out_advance_p: 300
+  #cross_out_advance_right_p: 1000
+  cross_out_turn_left_p: 1.4
+  cross_out_turn_right_p: 0.25
+  cross_imu_turn_detected_p: 45
+  cross_in_advance_p: 1000
+  dist_to_start_of_box_p: 50
+  dist_to_end_of_box_p: 120
+  box_length_p: 50
+
+  #Parallel Parking Parameters (distances in cms)
+  pit_in_parallel_advance_p: 230
+  
+  #Lidar Parameters
+  lidar_right_side_angle_p: 1.5707
+  lidar_right_side_angle_min_p: 2.2686
+  lidar_right_side_angle_max_p: 2.4422
+  lidar_right_side_ray_start_p: 402
+  lidar_right_side_ray_end_p: 412
+  
+  #Ultrasound Parameters
+  us_0_offset_x: -150
+  us_0_offset_y: 50
+  us_1_offset_x: -50
+  us_1_offset_y: 50
+  us_2_offset_x: -150
+  us_2_offset_y: 0
+  us_3_offset_x: -50
+  us_3_offset_y: 0
+  us_4_offset_x: -50
+  us_4_offset_y: 20
+  us_5_offset_x: 50
+  us_5_offset_y: 20
+  
+  #Parameters for the Visualization of Sensors
+  image_rotation_angle: 1.57
+  us_distance_scaling: 1

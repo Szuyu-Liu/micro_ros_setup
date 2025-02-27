@@ -1,0 +1,146 @@
+parking_node:
+ ros__parameters:      
+
+  # max/min values 
+    pi_steering_straight_p:  1.0
+    pi_steering_left_p:  0.0
+    pi_steering_right_p:  1.8
+    pi_speed_stop_p:  1.0
+    pi_speed_forward_p:  1.013
+    pi_speed_reverse_p:  0.989
+    pi_distance_reverse_p:  5.000
+    pi_distance_forward_p:  5.000
+    pi_lidar_angle_offset_p: 0.0
+    pi_wall_distance_p: 0.6
+
+  # conditions to perform reverse right move at start  //single move maneuver
+    POSITION_FOUND_imu_min_pi_p:  -5.
+    POSITION_FOUND_imu_max_pi_p:  5.
+    POSITION_FOUND_lidar_pi_p:  0.
+    POSITION_FOUND_us_left_pi_p:  -1.0
+    POSITION_FOUND_us_right_pi_p: .5
+    POSITION_FOUND_us_rear_left_pi_p:  .5
+    POSITION_FOUND_us_rear_right_pi_p:  .5
+    POSITION_FOUND_us_front_left_pi_p:  .5
+    POSITION_FOUND_us_front_right_pi_p:  .5
+    POSITION_FOUND_previous_state_pi_p:  -1
+    POSITION_FOUND_distance_pi_p:  2.0
+
+
+  # conditions to perform reverse right move at start  //single move maneuver
+    REVERSE_RIGHT_imu_min_pi_p:  37.
+    REVERSE_RIGHT_imu_max_pi_p:  50.
+    REVERSE_RIGHT_lidar_pi_p:  0.
+    REVERSE_RIGHT_us_left_pi_p:  .15
+    REVERSE_RIGHT_us_right_pi_p: .2
+    REVERSE_RIGHT_us_rear_left_pi_p:  .2
+    REVERSE_RIGHT_us_rear_right_pi_p:  .2
+    REVERSE_RIGHT_us_front_left_pi_p:  -1.
+    REVERSE_RIGHT_us_front_right_pi_p:  -1.
+    REVERSE_RIGHT_previous_state_pi_p:  -1
+    REVERSE_RIGHT_distance_pi_p:  1.300
+
+      # conditions to perform reverse left  move anytime
+    REVERSE_LEFT_imu_min_pi_p:  -10.
+    REVERSE_LEFT_imu_max_pi_p:  8.
+    REVERSE_LEFT_lidar_pi_p:  0.
+    REVERSE_LEFT_us_left_pi_p:  .2
+    REVERSE_LEFT_us_right_pi_p: .15
+    REVERSE_LEFT_us_rear_left_pi_p:  -1.
+    REVERSE_LEFT_us_rear_right_pi_p:  -1.
+    REVERSE_LEFT_us_front_left_pi_p:  -1.
+    REVERSE_LEFT_us_front_right_pi_p:  -1.
+    REVERSE_LEFT_previous_state_pi_p:  6
+    REVERSE_LEFT_distance_pi_p:  -.43   
+
+  # conditions to perform reverse straight correction move anytime
+    REVERSE_STRAIGHT_imu_min_pi_p:  40.
+    REVERSE_STRAIGHT_imu_max_pi_p:  50.
+    REVERSE_STRAIGHT_lidar_pi_p:  0.
+    REVERSE_STRAIGHT_us_left_pi_p:  .15
+    REVERSE_STRAIGHT_us_right_pi_p: .15
+    REVERSE_STRAIGHT_us_rear_left_pi_p: .22
+    REVERSE_STRAIGHT_us_rear_right_pi_p:  .22
+    REVERSE_STRAIGHT_us_front_left_pi_p:  -1.
+    REVERSE_STRAIGHT_us_front_right_pi_p:  -1.
+    REVERSE_STRAIGHT_previous_state_pi_p:  6
+    REVERSE_STRAIGHT_distance_pi_p:  0.55   
+
+  # conditions to perform forward left correction move anytime
+    FORWARD_LEFT_imu_min_pi_p:  -10.
+    FORWARD_LEFT_imu_max_pi_p:  90.
+    FORWARD_LEFT_lidar_pi_p:  0.
+    FORWARD_LEFT_us_left_pi_p:  -1.
+    FORWARD_LEFT_us_right_pi_p: .6
+    FORWARD_LEFT_us_rear_left_pi_p:  .150
+    FORWARD_LEFT_us_rear_right_pi_p:  .150
+    FORWARD_LEFT_us_front_left_pi_p:  .50
+    FORWARD_LEFT_us_front_right_pi_p:  .50
+    FORWARD_LEFT_previous_state_pi_p:  -1
+    FORWARD_LEFT_distance_pi_p:  0.45
+
+  # conditions to perform forward right correction move anytime
+    FORWARD_RIGHT_imu_min_pi_p:  -100.
+    FORWARD_RIGHT_imu_max_pi_p:  2.
+    FORWARD_RIGHT_lidar_pi_p:  0.
+    FORWARD_RIGHT_us_left_pi_p:  -1.
+    FORWARD_RIGHT_us_right_pi_p: .14
+    FORWARD_RIGHT_us_rear_left_pi_p:  -1.
+    FORWARD_RIGHT_us_rear_right_pi_p:  -1.
+    FORWARD_RIGHT_us_front_left_pi_p:  .2
+    FORWARD_RIGHT_us_front_right_pi_p:  .2
+    FORWARD_RIGHT_previous_state_pi_p:  6
+    FORWARD_RIGHT_distance_pi_p:  .17
+
+    
+  # conditions to perform forward straight correction move anytime
+    FORWARD_STRAIGHT_imu_min_pi_p:  -10.
+    FORWARD_STRAIGHT_imu_max_pi_p:  10.
+    FORWARD_STRAIGHT_lidar_pi_p:  0.
+    FORWARD_STRAIGHT_us_left_pi_p:  .15
+    FORWARD_STRAIGHT_us_right_pi_p: .15
+    FORWARD_STRAIGHT_us_rear_left_pi_p:  -1.
+    FORWARD_STRAIGHT_us_rear_right_pi_p:  -1.
+    FORWARD_STRAIGHT_us_front_left_pi_p:  .25
+    FORWARD_STRAIGHT_us_front_right_pi_p: .25
+    FORWARD_STRAIGHT_previous_state_pi_p:  6
+    FORWARD_STRAIGHT_distance_pi_p:  .27  
+
+ # conditions for start
+    START_imu_min_pi_p:  -1.
+    START_imu_max_pi_p:  -1.
+    START_lidar_pi_p:  -1.
+    START_us_left_pi_p:  0.140
+    START_us_right_pi_p: 0.140
+    START_us_rear_left_pi_p:  0.050
+    START_us_rear_right_pi_p:  0.050
+    START_us_front_left_pi_p:  0.050
+    START_us_front_right_pi_p:  0.050
+    START_previous_state_pi_p:  -1
+    START_distance_pi_p: -0.35       
+
+ # conditions for stop
+    STOP_imu_min_pi_p:  -1.
+    STOP_imu_max_pi_p:  -1.
+    STOP_lidar_pi_p:  -1.
+    STOP_us_left_pi_p:  0.140
+    STOP_us_right_pi_p: 0.140
+    STOP_us_rear_left_pi_p:  0.04
+    STOP_us_rear_right_pi_p:  0.040
+    STOP_us_front_left_pi_p:  0.08
+    STOP_us_front_right_pi_p:  0.08
+    STOP_previous_state_pi_p:  -1
+    STOP_distance_pi_p: -1.   
+
+  # conditions for finish
+    FINISH_imu_min_pi_p:  85.0
+    FINISH_imu_max_pi_p:  95.0
+    FINISH_lidar_pi_p:  -1.
+    FINISH_us_left_pi_p:  .15
+    FINISH_us_right_pi_p: .15
+    FINISH_us_rear_left_pi_p:  .2
+    FINISH_us_rear_right_pi_p:  .2
+    FINISH_us_front_left_pi_p:  -1.
+    FINISH_us_front_right_pi_p:  -1.
+    FINISH_previous_state_pi_p:  -1
+    FINISH_distance_pi_p: -1.               
