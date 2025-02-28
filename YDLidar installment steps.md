@@ -1,4 +1,4 @@
-### Steps to install YDLidar:
+# Steps to install YDLidar:
 prerequisite: ros2 installed
 
 ## 1. Clone and Install YDLIDAR SDK
