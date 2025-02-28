@@ -1,7 +1,7 @@
 ### Steps to install YDLidar:
 prerequisite: ros2 installed
 
-1. Clone and Install YDLIDAR SDK
+## 1. Clone and Install YDLIDAR SDK
 YDLidar-SDK is a dependency library of YDLidar
 
 cd ~
@@ -12,7 +12,7 @@ cmake ..
 make -j$(nproc)
 sudo make install
 
-2. Clone and Build YDLIDAR ROS 2 Package
+## 2. Clone and Build YDLIDAR ROS 2 Package
 
 source /opt/ros/jazzy/setup.bash
 cd ~/ydlidar_ros2_ws/src
@@ -26,10 +26,11 @@ no matching function for call to 'rclcpp::Node:: declare_parameter(const char [5
 The reason:
 In ROS 2 Jazzy, you must provide the parameter name and a default value when using declare_parameter. This means that older code (meant for previous ROS 2 versions) will throw an error if the default value is missing.
 
-use the library from Hartmut or change the source code like:
+The approach:
+Use the library from Hartmut or change the source code like:
 node->declare_parameter("port", str_optvalue);
 
-3. Make sure YDLidar was installed successfully
+## 3. Make sure YDLidar was installed successfully
 ros2 pkg list | grep ydlidar
 
 launch the node
@@ -38,4 +39,4 @@ ros2 launch ydlidar_ros2_driver ydlidar_launch.py
 ros2 topic list
 ros2 topic echo /scan
 
-here u can see the output of the laser_frame.
+Here you can see the output of the laser_frame.
