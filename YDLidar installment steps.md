@@ -21,7 +21,7 @@ cd ~/ydlidar_ros2_ws/src
 git clone https://github.com/YDLIDAR/ydlidar_ros2_driver.git
 cd ~/ydlidar_ros2_ws
 ```
-do:
+Do:
 ```
 colcon build --packages-select ydlidar_ros2_driver
 ```
@@ -43,8 +43,10 @@ In ROS 2 Jazzy, you must provide the parameter name and a default value when usi
 
 The approach:
 
-Use the library from Hartmut or change the source code like:
+Use the library from Hartmut or change the source file: ydlidar_ros2_driver_node.cpp
+- declare all the parameter before use it in the function.
 ```
+str_optvalue = "";
 node->declare_parameter("port", str_optvalue);
 ```
 ## 3. Make sure YDLidar was installed successfully
