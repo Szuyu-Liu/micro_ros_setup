@@ -65,3 +65,9 @@ Here you can see the output of the laser_frame.
 ros2 run ydlidar_ros2_driver ydlidar_ros2_driver_client
 ```
 It'll give a certain degree with a certain distance.
+
+Visualization
+```
+rviz2
+```
+
