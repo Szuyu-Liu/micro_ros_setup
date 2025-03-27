@@ -240,7 +240,7 @@ double Movement::reqTheta(double distance)
 
 double Movement::reqThetaDrehen(double angle)
 {
-    return correctedDiameter / diameter * angle;
+    return turningCircumference / diameter * angle;
 };
 
 void Movement::forward(double distance, int rightServoSpeed, int leftServoSpeed)

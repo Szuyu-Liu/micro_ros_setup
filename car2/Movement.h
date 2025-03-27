@@ -7,7 +7,7 @@
 #include "Arduino.h"
 #include <Servo.h>
 
-class Bewegung
+class Movement
 {
 private:
 	Servo servoRight;
@@ -15,10 +15,10 @@ private:
 
 	// robot information
 	double diameter = 0; // in cm
-	double umfang = 0;
+	double circumference = 0;
 
-	double durchmesserWendekreis = 0; // in cm
-	double umfangWendekreis = 0;
+	double turningDiameter = 0; // in cm
+	double turningCircumference = 0;
 
 	// Servo Pin
 	byte pinFeedbackRight = 0;
