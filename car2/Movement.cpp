@@ -28,7 +28,7 @@ void Movement::Pcontroller(int dir)
         totalDeltaThetaRight += deltaThetaRight;
         totalDeltaThetaLeft += deltaThetaLeft;
         controlDeviation = totalDeltaThetaRight - totalDeltaThetaLeft;
-        Serial.println(controlDeviation);
+        // Serial.println(controlDeviation);
         if (abs(controlDeviation) > threshold)
         { // Hysteresis of two points control
             if (controlDeviation > 0)
@@ -55,7 +55,7 @@ void Movement::Pcontroller(int dir)
         totalDeltaThetaRight += deltaThetaRight;
         totalDeltaThetaLeft += deltaThetaLeft;
         controlDeviation = totalDeltaThetaRight - totalDeltaThetaLeft;
-        Serial.println(controlDeviation);
+        // Serial.println(controlDeviation);
         if (abs(controlDeviation) > threshold)
         { // Hysteresis of two points control
             if (controlDeviation > 0)
@@ -82,7 +82,7 @@ void Movement::Pcontroller(int dir)
         totalDeltaThetaRight -= deltaThetaRight;
         totalDeltaThetaLeft += deltaThetaLeft;
         controlDeviation = abs(totalDeltaThetaRight) - totalDeltaThetaLeft;
-        Serial.println(controlDeviation);
+        // Serial.println(controlDeviation);
         if (abs(controlDeviation) > threshold)
         { // Hysteresis of two points control
             if (controlDeviation > 0)
@@ -109,7 +109,7 @@ void Movement::Pcontroller(int dir)
         totalDeltaThetaRight += deltaThetaRight;
         totalDeltaThetaLeft -= deltaThetaLeft;
         controlDeviation = totalDeltaThetaRight - abs(totalDeltaThetaLeft);
-        Serial.println(controlDeviation);
+        // Serial.println(controlDeviation);
         if (abs(controlDeviation) > threshold)
         { // Hysteresis of two points control
             if (controlDeviation > 0)
@@ -130,7 +130,7 @@ void Movement::Pcontroller(int dir)
         }
     }
 
-    //printInfos();
+    printInfos();
 };
 
 void Movement::printInfos()
@@ -240,7 +240,7 @@ double Movement::reqTheta(double distance)
 
 double Movement::reqThetaDrehen(double angle)
 {
-    return turningCircumference / diameter * angle;
+    return turningDiameter / diameter * angle;
 };
 
 void Movement::forward(double distance, int rightServoSpeed, int leftServoSpeed)

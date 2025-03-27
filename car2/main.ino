@@ -6,7 +6,7 @@ byte pinServoRight = 5;
 byte pinServoLeft = 6;
 
 double diameter = 6.65;
-double width = 10.3;
+double width = 10.8;
 double friction = 0.3;
 double slide = -0.2;
 
@@ -44,12 +44,12 @@ void loop()
       break;
 
     case '3':
-      car.forward(97, 88, 98);
-      delay(200);
-      car.turnRight(90, 97, 97);
-      delay(200);
-      car.forward(20, 88, 98);
-      delay(200);
+      // car.forward(97, 88, 98);
+      // delay(200);
+      // car.turnRight(180, 97, 97);
+      // delay(200);
+      // car.forward(20, 88, 98);
+      // delay(200);
       car.turnLeft(180, 89, 89);
       delay(200);
       break;
@@ -57,8 +57,8 @@ void loop()
     case '1':
       car.forward(100, 88, 98);
       delay(200);
-      car.backward(100, 98, 88);
-      delay(200);
+      // car.backward(100, 98, 88);
+      // delay(200);
       break;
 
     case '2':
