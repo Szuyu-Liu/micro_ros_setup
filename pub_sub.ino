@@ -121,7 +121,7 @@ void car_subscription_callback(const void * msgin)
 {
   const std_msgs__msg__Float32MultiArray * msgMovement = (const std_msgs__msg__Float32MultiArray *)msgin;
   
-  switch (msgMovement->data.data[0]) {
+  switch (int(msgMovement->data.data[0])) {
     case 1:
       car.forward(msgMovement->data.data[1], 88, 98, publisher, msg);
       break;
@@ -147,7 +147,7 @@ bool create_entities()
   RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
 
   // create node
-  RCCHECK(rclc_node_init_default(&node, "int32_publisher_rclc", "", &support));
+  RCCHECK(rclc_node_init_default(&node, "teensy", "", &support));
 
   // create publisher
   RCCHECK(rclc_publisher_init_best_effort(
