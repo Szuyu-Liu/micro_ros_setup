@@ -147,7 +147,7 @@ bool create_entities()
   RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
 
   // create node
-  RCCHECK(rclc_node_init_default(&node, "teensy", "", &support));
+  RCCHECK(rclc_node_init_default(&node, "teensy_node", "", &support));
 
   // create publisher
   RCCHECK(rclc_publisher_init_best_effort(
