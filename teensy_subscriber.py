@@ -1,15 +1,19 @@
+import numpy as np
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float32MultiArray
+from rclpy.qos import QoSProfile, ReliabilityPolicy
 
 class CarPositionNode(Node):
     def __init__(self):
         super().__init__('car_position_node')
+        qos_profile = QoSProfile(depth=10)
+        qos_profile.reliability = ReliabilityPolicy.BEST_EFFORT
         self.subscription = self.create_subscription(
             Float32MultiArray,
             '/car_angles',
             self.car_angles_callback,
-            10)
+            qos_profile)
         self.publisher = self.create_publisher(Float32MultiArray, '/car_position', 10)
         
         # Car state
@@ -20,9 +24,9 @@ class CarPositionNode(Node):
         self.prev_left_angle = None
         
         # Parameters (Set these based on your car's configuration)
-        self.circumference = 0.2  # Example wheel circumference in meters
-        self.turning_circumference = 1.0  # Example turning circumference in meters
-        
+        self.circumference = 20.892  # Example wheel circumference in meters
+        self.turning_circumference = 32.8 # Example turning circumference in meters
+
     def car_angles_callback(self, msg):
         right_angle, left_angle = msg.data
         
@@ -41,7 +45,12 @@ class CarPositionNode(Node):
         
         # Compute displacement and orientation change
         displacement = ((delta_theta_right + delta_theta_left) / (2 * 360)) * self.circumference
+        if -1 < displacement < 1:
+            displacement = 0
+
         orientation_change = ((delta_theta_left - delta_theta_right) / (2 * 360)) * (self.circumference / self.turning_circumference) * 360
+        if -3 < orientation_change < 3:
+            orientation_change = 0
         
         # Update position
         self.theta += orientation_change
