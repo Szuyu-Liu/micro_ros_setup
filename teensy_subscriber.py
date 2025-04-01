@@ -15,6 +15,7 @@ class CarPositionNode(Node):
             self.car_angles_callback,
             qos_profile)
         self.publisher = self.create_publisher(Float32MultiArray, '/car_position', 10)
+        self.movement_publisher = self.create_publisher(Float32MultiArray, '/movement', 10)
         
         # Car state
         self.x = 0.0
@@ -25,7 +26,16 @@ class CarPositionNode(Node):
         
         # Parameters (Set these based on your car's configuration)
         self.circumference = 20.892  # Example wheel circumference in meters
-        self.turning_circumference = 32.8 # Example turning circumference in meters
+        self.turning_circumference = 33.929 # Example turning circumference in meters
+
+        self.publish_initial_movement()
+    
+    def publish_initial_movement(self):
+        """Publishes the initial movement command."""
+        movement_msg = Float32MultiArray()
+        movement_msg.data = [1.0, 0.0]
+        self.movement_publisher.publish(movement_msg)
+        self.get_logger().info('Published initial movement command: [1.0, 0.0]')
 
     def car_angles_callback(self, msg):
         right_angle, left_angle = msg.data
@@ -54,6 +64,7 @@ class CarPositionNode(Node):
         
         # Update position
         self.theta += orientation_change
+        self.theta %= 360
         self.x += displacement * np.cos(np.radians(self.theta))
         self.y += displacement * np.sin(np.radians(self.theta))
         
