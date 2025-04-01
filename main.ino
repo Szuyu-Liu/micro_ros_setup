@@ -1,4 +1,3 @@
-// #include "Movement.h"
 #include <Servo.h>
 #include <micro_ros_arduino.h>
 
@@ -46,7 +45,7 @@ byte pinServoRight = 5;
 byte pinServoLeft = 6;
 
 double diameter = 6.65;
-double width = 10.75;
+double width = 10.5;
 double friction = 0.0;
 double slide = -0.2;
 
@@ -124,15 +123,23 @@ void car_subscription_callback(const void * msgin)
   switch (int(msgMovement->data.data[0])) {
     case 1:
       car.forward(msgMovement->data.data[1], 88, 98, publisher, msg);
+      delay(100);
+      car.forward(0, 88, 98, publisher, msg);
       break;
     case 2:
       car.backward(msgMovement->data.data[1], 98, 88, publisher, msg);
+      delay(100);
+      car.forward(0, 88, 98, publisher, msg);
       break;
     case 3:
-      car.turnLeft(msgMovement->data.data[1], 89, 89, publisher, msg);
+      car.turnLeft(msgMovement->data.data[1], 90, 90, publisher, msg);
+      delay(100);
+      car.forward(0, 88, 98, publisher, msg);
       break;
     case 4:
       car.turnRight(msgMovement->data.data[1], 97, 97, publisher, msg);
+      delay(100);
+      car.forward(0, 88, 98, publisher, msg);
       break;
     default:
       break;
@@ -505,7 +512,7 @@ void Movement::forward(double distance, int rightServoSpeed, int leftServoSpeed,
           rcl_publish(&publisher, &msg, NULL);
         }
     }
-	
+
 	  msg.data.data[0] = totalThetaRight;
     msg.data.data[1] = totalThetaLeft;
     rcl_publish(&publisher, &msg, NULL);
@@ -541,7 +548,7 @@ void Movement::backward(double distance, int rightServoSpeed, int leftServoSpeed
           rcl_publish(&publisher, &msg, NULL);
         }
     }
-	
+
 	  msg.data.data[0] = totalThetaRight;
     msg.data.data[1] = totalThetaLeft;
     rcl_publish(&publisher, &msg, NULL);
@@ -559,11 +566,11 @@ void Movement::turnRight(double angle, int rightServoSpeed, int leftServoSpeed, 
     servoRight.write(rightServoSpeed);
     servoLeft.write(leftServoSpeed);
 
-    double reqThetaRight = totalThetaRight - reqThetaDrehen(angle);
-    double reqThetaLeft = totalThetaLeft + reqThetaDrehen(angle);
+    double reqThetaRight = totalThetaRight - reqThetaDrehen(angle-3);
+    double reqThetaLeft = totalThetaLeft + reqThetaDrehen(angle-3);
     unsigned long previousMillis = millis();
 
-    while ((totalThetaRight > reqThetaRight) && (totalThetaLeft < reqThetaLeft))
+    while ((totalThetaRight > reqThetaRight) || (totalThetaLeft < reqThetaLeft))
     {
         Pcontroller(2);
         servoRight.write(rightServoSpeed + PcontrolRight);
@@ -577,7 +584,7 @@ void Movement::turnRight(double angle, int rightServoSpeed, int leftServoSpeed, 
           rcl_publish(&publisher, &msg, NULL);
         }
     }
-	
+
 	  msg.data.data[0] = totalThetaRight;
     msg.data.data[1] = totalThetaLeft;
     rcl_publish(&publisher, &msg, NULL);
@@ -612,7 +619,7 @@ void Movement::turnLeft(double angle, int rightServoSpeed, int leftServoSpeed, r
           rcl_publish(&publisher, &msg, NULL);
         }
     }
-	
+
 	  msg.data.data[0] = totalThetaRight;
     msg.data.data[1] = totalThetaLeft;
     rcl_publish(&publisher, &msg, NULL);
