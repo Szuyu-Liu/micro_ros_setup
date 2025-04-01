@@ -2,6 +2,9 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float32MultiArray
+from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Quaternion
+from tf_transformations import quaternion_from_euler
 from rclpy.qos import QoSProfile, ReliabilityPolicy
 
 class CarPositionNode(Node):
@@ -14,8 +17,16 @@ class CarPositionNode(Node):
             '/car_angles',
             self.car_angles_callback,
             qos_profile)
+
+        self.imu_subscription = self.create_subscription(
+            Float32MultiArray,
+            '/imu_euler',
+            self.imu_listener_callback,
+            qos_profile)
+
         self.publisher = self.create_publisher(Float32MultiArray, '/car_position', 10)
         self.movement_publisher = self.create_publisher(Float32MultiArray, '/movement', 10)
+        self.odom_publisher = self.create_publisher(Odometry, '/odom', 10)
         
         # Car state
         self.x = 0.0
@@ -74,7 +85,32 @@ class CarPositionNode(Node):
         self.publisher.publish(position_msg)
         
         self.get_logger().info(f'Position: x={self.x:.3f}, y={self.y:.3f}, theta={self.theta:.2f}')
+        # Convert theta to quaternion
+        quaternion = quaternion_from_euler(0, 0, np.radians(self.theta))  # Roll, Pitch, Yaw
 
+        # Publish odometry message
+        odom_msg = Odometry()
+        odom_msg.header.stamp = self.get_clock().now().to_msg()
+        odom_msg.header.frame_id = "odom"
+        odom_msg.child_frame_id = "base_link"
+
+        odom_msg.pose.pose.position.x = self.x
+        odom_msg.pose.pose.position.y = self.y
+        odom_msg.pose.pose.position.z = 0.0  # 2D plane
+        
+        odom_msg.pose.pose.orientation = Quaternion(
+            x=quaternion[0], y=quaternion[1], z=quaternion[2], w=quaternion[3]
+        )
+
+        self.odom_publisher.publish(odom_msg)
+
+        self.get_logger().info(f'Odometry: x={self.x:.3f}, y={self.y:.3f}, theta={self.theta:.2f}')
+        
+        
+    def imu_listener_callback(self, msg):
+        imu_message = msg.data[0]
+        if imu_message <= 360:
+            self.get_logger().info('I heard: "%s"' % imu_message)
 
 def main(args=None):
     rclpy.init(args=args)
