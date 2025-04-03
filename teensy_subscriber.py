@@ -4,6 +4,8 @@ from rclpy.node import Node
 from std_msgs.msg import Float32MultiArray
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Quaternion
+from geometry_msgs.msg import TransformStamped
+from tf2_ros import TransformBroadcaster
 from tf_transformations import quaternion_from_euler
 from rclpy.qos import QoSProfile, ReliabilityPolicy
 
@@ -22,6 +24,7 @@ class SensorFusionNode(Node):
         # Publishers current position, initialize car position and odometry
         self.movement_publisher = self.create_publisher(Float32MultiArray, '/movement', 10)
         self.odom_publisher = self.create_publisher(Odometry, '/odom', 10)
+        self.tf_broadcaster = TransformBroadcaster(self)
         
         # Car state
         self.x = 0.0
@@ -111,7 +114,7 @@ class SensorFusionNode(Node):
             self.get_logger().info(f'Storing initial IMU heading: {self.initial_imu_heading:.2f}')
 
         # Check for the noise deviation
-        if 7.9 <= abs(current_heading - self.last_valid_heading) <= 8.1:
+        if 7.7 <= abs(current_heading - self.last_valid_heading) <= 8.3:
             self.get_logger().warn(f'Ignored IMU noise: {current_heading:.2f} (Deviation of 8.0)')
             return 
 
@@ -149,6 +152,22 @@ class SensorFusionNode(Node):
             x=quat[0], y=quat[1], z=quat[2], w=quat[3]
         )
         self.odom_publisher.publish(odom)
+        
+        # Broadcast TF transformation
+        tf_msg = TransformStamped()
+        tf_msg.header.stamp = self.get_clock().now().to_msg()
+        tf_msg.header.frame_id = "odom"
+        tf_msg.child_frame_id = "base_link"
+        tf_msg.transform.translation.x = self.x
+        tf_msg.transform.translation.y = self.y
+        tf_msg.transform.translation.z = 0.0
+        tf_msg.transform.rotation.x = quat[0]
+        tf_msg.transform.rotation.y = quat[1]
+        tf_msg.transform.rotation.z = quat[2]
+        tf_msg.transform.rotation.w = quat[3]
+
+        self.tf_broadcaster.sendTransform(tf_msg)
+
         self.get_logger().info(f'Odometry published: x={self.x:.2f}, y={self.y:.2f}, θ={self.theta:.2f}°')
 
 
