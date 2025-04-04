@@ -30,7 +30,7 @@ class SensorFusionNode(Node):
         self.x = 0.0
         self.y = 0.0
         self.theta = 0.0  # Initial orientation
-        self.theta_imu = None # initial imu theta for sensor fusion
+        self.theta_imu = 0.0 # initial imu theta for sensor fusion
         self.theta_odom = 0.0 # initial odom theta for sensor fusion
         self.orientation_change = 0.0
         self.prev_right_angle = None
@@ -41,7 +41,6 @@ class SensorFusionNode(Node):
         self.turning_circumference = 33.929 
 
         # # IMU reference
-        self.last_valid_heading = None
         self.last_heading = None
         self.initial_imu_heading = None  
 
@@ -91,8 +90,6 @@ class SensorFusionNode(Node):
         self.get_logger().info(f'Original Encoder Orientation: {self.theta_odom:.2f}')
 
     def fuse_angles(self, theta_odom, theta_imu, weight_odom, weight_imu):
-        if 5 <= abs(theta_odom - theta_imu) <= 355:
-            return theta_odom
         # Convert angles to radians
         rad_odom = np.radians(theta_odom)
         rad_imu = np.radians(theta_imu)
@@ -113,27 +110,22 @@ class SensorFusionNode(Node):
 
         if self.initial_imu_heading is None:
             self.initial_imu_heading = current_heading  
-            self.last_valid_heading = current_heading
             self.last_heading = current_heading
             self.get_logger().info(f'Storing initial IMU heading: {self.initial_imu_heading:.2f}')
-
-        # Check for the noise deviation
-        if 7.7 <= abs(current_heading - self.last_valid_heading) <= 8.3:
-            self.get_logger().warn(f'Ignored IMU noise: {current_heading:.2f} (Deviation of 8.0)')
-            return 
-        heading_change = current_heading - self.last_valid_heading
+		
+        heading_change = current_heading - self.last_heading
 
         # Ignore small drifts (≤ 1.0) in heading calculation, but still publish odometry
-        if abs(heading_change) > 1.0:
-            self.last_valid_heading = current_heading
-            self.get_logger().info(f'real turn.............................................................')
-        else:
-            self.last_heading = current_heading
-            current_heading = self.last_valid_heading
-          #  self.get_logger().info(f'drift:{current_heading - self.last_heading}:.2f')
-        #self.get_logger().info(f'real angle:{current_heading:.2f}')
-        normalized_heading = (current_heading - self.initial_imu_heading) % 360 # Normalize heading
-        self.theta_imu = normalized_heading
+        if abs(heading_change) >= 1.0:
+			# sometimes imu has noises around 8
+			if 7.6 <= abs(heading_change) <= 8.4:
+				current_heading = self.last_heading
+			else:
+				self.theta_imu += (current_heading - self.last_heading)
+
+		self.last_heading = current_heading
+
+        self.theta_imu %= 360
         self.get_logger().info(f'IMU heading: {normalized_heading:.2f}')
 
         # Fuse theta
