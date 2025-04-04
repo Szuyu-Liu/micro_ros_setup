@@ -118,7 +118,7 @@ class SensorFusionNode(Node):
         # Ignore small drifts (≤ 1.0) in heading calculation, but still publish odometry
         if abs(heading_change) >= 1.0:
 			# sometimes imu has noises around 8
-			if 7.6 <= abs(heading_change) <= 8.4:
+			if 7.6 <= abs(heading_change) <= 8.4 or 20 <= abs(heading_change) <= 340:
 				current_heading = self.last_heading
 			else:
 				self.theta_imu += (current_heading - self.last_heading)
