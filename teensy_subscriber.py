@@ -90,6 +90,8 @@ class SensorFusionNode(Node):
         self.get_logger().info(f'Original Encoder Orientation: {self.theta_odom:.2f}')
 
     def fuse_angles(self, theta_odom, theta_imu, weight_odom, weight_imu):
+        if 5 <= abs(theta_odom - theta_imu) <= 355:
+            return theta_odom
         # Convert angles to radians
         rad_odom = np.radians(theta_odom)
         rad_imu = np.radians(theta_imu)
@@ -112,27 +114,28 @@ class SensorFusionNode(Node):
             self.initial_imu_heading = current_heading  
             self.last_heading = current_heading
             self.get_logger().info(f'Storing initial IMU heading: {self.initial_imu_heading:.2f}')
-		
-        heading_change = current_heading - self.last_heading
 
+        heading_change = current_heading - self.last_heading
         # Ignore small drifts (≤ 1.0) in heading calculation, but still publish odometry
         if abs(heading_change) >= 1.0:
-			# sometimes imu has noises around 8 and heading around 248.0
-			if 7.6 <= abs(heading_change) <= 8.4 or 247.6 <= current_heading <= 248.4:
-				current_heading = self.last_heading
-			else:
-				self.theta_imu += (current_heading - self.last_heading)
-
-		self.last_heading = current_heading
-
+            # ignore the imu noise around 8.0 and current_heading around 248
+            if 7.6 <= abs(heading_change) <= 8.4 or 247.6 <= current_heading <= 248.4:
+                current_heading = self.last_heading
+            else:
+                self.theta_imu += (current_heading - self.last_heading)
+                
+        self.last_heading = current_heading
+        #self.get_logger().info(f'real angle:{current_heading:.2f}')
         self.theta_imu %= 360
-        self.get_logger().info(f'IMU heading: {normalized_heading:.2f}')
+        self.get_logger().info(f'IMU heading: {self.theta_imu:.2f}')
 
         # Fuse theta
         if self.theta_imu is not None:
             if self.orientation_change > 0:  # Turning Right
+                #self.theta = self.fuse_angles(self.theta_odom, self.theta_imu, 0.8, 0.2)
                 self.theta = self.fuse_angles(self.theta_odom, self.theta_imu, 0.8, 0.2)
             elif self.orientation_change < 0:  # Turning Left
+                #self.theta = self.fuse_angles(self.theta_odom, self.theta_imu, 0.2, 0.8)
                 self.theta = self.fuse_angles(self.theta_odom, self.theta_imu, 0.2, 0.8)
             else:  # Straight
                 self.theta = self.theta_odom
@@ -149,8 +152,8 @@ class SensorFusionNode(Node):
         odom.header.frame_id = "odom"
         odom.child_frame_id = "base_link"
 
-        odom.pose.pose.position.x = self.x
-        odom.pose.pose.position.y = self.y
+        odom.pose.pose.position.x = self.x / 100
+        odom.pose.pose.position.y = self.y / 100
         odom.pose.pose.position.z = 0.0 # 2D plane
 
         odom.pose.pose.orientation = Quaternion(
@@ -163,8 +166,8 @@ class SensorFusionNode(Node):
         tf_msg.header.stamp = self.get_clock().now().to_msg()
         tf_msg.header.frame_id = "odom"
         tf_msg.child_frame_id = "base_link"
-        tf_msg.transform.translation.x = self.x
-        tf_msg.transform.translation.y = self.y
+        tf_msg.transform.translation.x = self.x / 100
+        tf_msg.transform.translation.y = self.y / 100
         tf_msg.transform.translation.z = 0.0
         tf_msg.transform.rotation.x = quat[0]
         tf_msg.transform.rotation.y = quat[1]
