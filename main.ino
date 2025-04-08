@@ -199,8 +199,8 @@ void setup() {
   state = WAITING_AGENT;
 
   // to publish totalThetaRight and totalThetaLeft
-  msg.data.capacity = 2;
-  msg.data.size = 2;
+  msg.data.capacity = 3;
+  msg.data.size = 3;
   msg.data.data = (float *)malloc(msg.data.capacity * sizeof(float));
   
   msgMovement.data.capacity = 2;
@@ -504,17 +504,19 @@ void Movement::forward(double distance, int rightServoSpeed, int leftServoSpeed,
         servoRight.write(rightServoSpeed + PcontrolRight);
         servoLeft.write(leftServoSpeed + PcontrolLeft);
 
-        if (millis() - previousMillis >= 200)
+        if (millis() - previousMillis >= 100)
         {
           previousMillis = millis();
           msg.data.data[0] = totalThetaRight;
           msg.data.data[1] = totalThetaLeft;
+          msg.data.data[2] = (float)(previousMillis) / 1000.0;
           rcl_publish(&publisher, &msg, NULL);
         }
     }
 
 	  msg.data.data[0] = totalThetaRight;
     msg.data.data[1] = totalThetaLeft;
+    msg.data.data[2] = (float)(millis()) / 1000.0;;
     rcl_publish(&publisher, &msg, NULL);
 
     servoRight.detach();
@@ -545,12 +547,14 @@ void Movement::backward(double distance, int rightServoSpeed, int leftServoSpeed
           previousMillis = millis();
           msg.data.data[0] = totalThetaRight;
           msg.data.data[1] = totalThetaLeft;
+          msg.data.data[2] = (float)(previousMillis) / 1000.0;
           rcl_publish(&publisher, &msg, NULL);
         }
     }
 
 	  msg.data.data[0] = totalThetaRight;
     msg.data.data[1] = totalThetaLeft;
+    msg.data.data[2] = (float)(millis()) / 1000.0;
     rcl_publish(&publisher, &msg, NULL);
 
     servoRight.detach();
@@ -579,14 +583,17 @@ void Movement::turnRight(double angle, int rightServoSpeed, int leftServoSpeed, 
         if (millis() - previousMillis >= 200)
         {
           previousMillis = millis();
+
           msg.data.data[0] = totalThetaRight;
-          msg.data.data[1] = totalThetaLeft;          
+          msg.data.data[1] = totalThetaLeft;
+          msg.data.data[2] = (float)(previousMillis) / 1000.0;
           rcl_publish(&publisher, &msg, NULL);
         }
     }
 
 	  msg.data.data[0] = totalThetaRight;
     msg.data.data[1] = totalThetaLeft;
+    msg.data.data[2] = (float)(millis()) / 1000.0;
     rcl_publish(&publisher, &msg, NULL);
 
     servoRight.detach();
@@ -614,14 +621,17 @@ void Movement::turnLeft(double angle, int rightServoSpeed, int leftServoSpeed, r
         if (millis() - previousMillis >= 200)
         {
           previousMillis = millis();
+
           msg.data.data[0] = totalThetaRight;
           msg.data.data[1] = totalThetaLeft;
+          msg.data.data[2] = (float)(previousMillis) / 1000.0;
           rcl_publish(&publisher, &msg, NULL);
         }
     }
 
 	  msg.data.data[0] = totalThetaRight;
     msg.data.data[1] = totalThetaLeft;
+    msg.data.data[2] = (float)(millis()) / 1000.0;
     rcl_publish(&publisher, &msg, NULL);
 
     servoRight.detach();
