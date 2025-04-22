@@ -9,6 +9,7 @@
 #include <rmw_microros/rmw_microros.h>
 
 #include <std_msgs/msg/float32_multi_array.h>
+#include <geometry_msgs/msg/twist.h>
 
 #define LED_PIN 13
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){return false;}}
@@ -25,10 +26,11 @@ rclc_executor_t executor;
 rcl_allocator_t allocator;
 rcl_publisher_t publisher;
 rcl_subscription_t subscriber;
+rcl_subscription_t cmdVelSub;
 
 
 std_msgs__msg__Float32MultiArray msg;		// to publish the totalThetaRight and totalThetaLeft
-std_msgs__msg__Float32MultiArray msgMovement;		// to subscribe the movement command from raspberry pi
+geometry_msgs__msg__Twist cmdVelMsg;		// to subscribe the movement command from nav2 topic cmd_vel
 
 bool micro_ros_init_successful;
 
@@ -45,9 +47,15 @@ byte pinServoRight = 5;
 byte pinServoLeft = 6;
 
 double diameter = 6.65;
-double width = 10.5;
+double width = 11.0;
 double friction = 0.0;
-double slide = -0.2;
+double slide = 0.0;
+
+// receive the command from cml_vel
+float cmdVelLinear = 0.0;
+float cmdVelAngular = 0.0;
+int servoSpeedR = 1500, servoSpeedL = 1500;
+
 
 class Movement
 {
@@ -70,9 +78,6 @@ private:
 	unsigned long highRight = 0, highLeft = 0;
 	unsigned long lowRight = 0, lowLeft = 0;
 
-	double controlDeviation;
-	const int threshold = 3;
-
 	const int circleUnits = 360;
 	const float DC_MIN = 2.9;  // From Parallax spec sheet
 	const float DC_MAX = 97.1; // From Parallax spec sheet
@@ -86,9 +91,7 @@ private:
 	double totalDeltaThetaRight = 0, totalDeltaThetaLeft = 0;
 	double totalThetaRight = 0, totalThetaLeft = 0;
 	double totalThetaRightPrev = 0, totalThetaLeftPrev = 0;
-	int PcontrolRight = 0, PcontrolLeft = 0;
 
-	void Pcontroller(int);
 	void printInfos();
 	void updateThetasRight();
 	void updateThetasLeft();
@@ -101,12 +104,9 @@ public:
 
 	Movement(byte, byte, byte, byte, double, double, double);
 	~Movement();
-	
-	void forward(double, int, int, rcl_publisher_t&, std_msgs__msg__Float32MultiArray&);
-	void backward(double, int, int, rcl_publisher_t&, std_msgs__msg__Float32MultiArray&);
-	void turnRight(double, int, int, rcl_publisher_t&, std_msgs__msg__Float32MultiArray&);
-	void turnLeft(double, int, int, rcl_publisher_t&, std_msgs__msg__Float32MultiArray&);
-	
+
+	void runAndPublish(rcl_publisher_t&, std_msgs__msg__Float32MultiArray&);
+	void stopAndPublish(rcl_publisher_t&, std_msgs__msg__Float32MultiArray&);
 };
 
 Movement car(pinFeedbackRight, pinFeedbackLeft, pinServoRight, pinServoLeft, diameter, friction, width + slide);
@@ -116,34 +116,20 @@ Movement car(pinFeedbackRight, pinFeedbackLeft, pinServoRight, pinServoLeft, dia
 // - RMW_UXRCE_ENTITY_CREATION_DESTROY_TIMEOUT=0
 // - UCLIENT_MAX_SESSION_CONNECTION_ATTEMPTS=3
 
-void car_subscription_callback(const void * msgin)
-{
-  const std_msgs__msg__Float32MultiArray * msgMovement = (const std_msgs__msg__Float32MultiArray *)msgin;
-  
-  switch (int(msgMovement->data.data[0])) {
-    case 1:
-      car.forward(msgMovement->data.data[1], 88, 98, publisher, msg);
-      delay(100);
-      car.forward(0, 88, 98, publisher, msg);
-      break;
-    case 2:
-      car.backward(msgMovement->data.data[1], 98, 88, publisher, msg);
-      delay(100);
-      car.forward(0, 88, 98, publisher, msg);
-      break;
-    case 3:
-      car.turnLeft(msgMovement->data.data[1], 90, 90, publisher, msg);
-      delay(100);
-      car.forward(0, 88, 98, publisher, msg);
-      break;
-    case 4:
-      car.turnRight(msgMovement->data.data[1], 97, 97, publisher, msg);
-      delay(100);
-      car.forward(0, 88, 98, publisher, msg);
-      break;
-    default:
-      break;
-  }
+
+void cmdVelCallback(const void* msgin) {
+    const geometry_msgs__msg__Twist* cmdVelMsg = (const geometry_msgs__msg__Twist*)msgin;
+    cmdVelLinear = cmdVelMsg->linear.x;
+    cmdVelAngular = cmdVelMsg->angular.z;
+	
+    twistToServo(cmdVelLinear, cmdVelAngular);
+    
+    if (abs(cmdVelLinear) >= 0.01 || abs(cmdVelAngular) >= 0.01) {
+      car.runAndPublish(publisher, msg);
+    }
+    else {
+      car.stopAndPublish(publisher, msg);
+    } 
 }
 
 bool create_entities()
@@ -163,16 +149,17 @@ bool create_entities()
     ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32MultiArray),
     "car_angles"));
 	
-  RCCHECK(rclc_subscription_init_default(
-    &subscriber,
-    &node,
-    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32MultiArray),
-    "movement"));
+	RCCHECK(rclc_subscription_init_default(
+	  &cmdVelSub,
+	  &node,
+	  ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
+	  "/cmd_vel"
+	));
 
   // create executor
   executor = rclc_executor_get_zero_initialized_executor();
   RCCHECK(rclc_executor_init(&executor, &support.context, 2, &allocator));
-  RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msgMovement, &car_subscription_callback, ON_NEW_DATA));
+  rclc_executor_add_subscription(&executor, &cmdVelSub, &cmdVelMsg, &cmdVelCallback, ON_NEW_DATA);
 
   return true;
 }
@@ -189,7 +176,6 @@ void destroy_entities()
   rclc_support_fini(&support);
   
   free(msg.data.data);
-  free(msgMovement.data.data);
 }
 
 void setup() {
@@ -199,13 +185,9 @@ void setup() {
   state = WAITING_AGENT;
 
   // to publish totalThetaRight and totalThetaLeft
-  msg.data.capacity = 3;
-  msg.data.size = 3;
+  msg.data.capacity = 2;
+  msg.data.size = 2;
   msg.data.data = (float *)malloc(msg.data.capacity * sizeof(float));
-  
-  msgMovement.data.capacity = 2;
-  msgMovement.data.size = 2;
-  msgMovement.data.data = (float *)malloc(msgMovement.data.capacity * sizeof(float));
 }
 
 void loop() {
@@ -255,119 +237,6 @@ Movement::Movement(byte pinFeedbackRight, byte pinFeedbackLeft, byte pinServoRig
     servoLeft.detach();
 };
 
-void Movement::Pcontroller(int dir)
-{
-    updateDeltaThetas();
-    // Control for move forward
-    if (dir == 1)
-    {
-        totalDeltaThetaRight += deltaThetaRight;
-        totalDeltaThetaLeft += deltaThetaLeft;
-        controlDeviation = totalDeltaThetaRight - totalDeltaThetaLeft;
-        // Serial.println(controlDeviation);
-        if (abs(controlDeviation) > threshold)
-        { // Hysteresis of two points control
-            if (controlDeviation > 0)
-            { // right wheels run faster than left wheels
-                PcontrolRight = 0;
-                PcontrolLeft = 1; // clockwise
-            }
-            else
-            {
-                PcontrolRight = -1; // counter clockwise
-                PcontrolLeft = 0;
-            }
-        }
-        else
-        {
-            PcontrolRight = 0;
-            PcontrolLeft = 0;
-        }
-    }
-
-    // Control for move backward
-    if (dir == -1)
-    {
-        totalDeltaThetaRight += deltaThetaRight;
-        totalDeltaThetaLeft += deltaThetaLeft;
-        controlDeviation = totalDeltaThetaRight - totalDeltaThetaLeft;
-        // Serial.println(controlDeviation);
-        if (abs(controlDeviation) > threshold)
-        { // Hysteresis of two points control
-            if (controlDeviation > 0)
-            { // right wheels run faster than left wheels
-                PcontrolRight = 1;
-                PcontrolLeft = 0; // clockwise
-            }
-            else
-            {
-                PcontrolRight = 0; // counterclockwise
-                PcontrolLeft = -1;
-            }
-        }
-        else
-        {
-            PcontrolRight = 0;
-            PcontrolLeft = 0;
-        }
-    }
-
-    // control for right wheels
-    if (dir == 2)
-    {
-        totalDeltaThetaRight -= deltaThetaRight;
-        totalDeltaThetaLeft += deltaThetaLeft;
-        controlDeviation = abs(totalDeltaThetaRight) - totalDeltaThetaLeft;
-        // Serial.println(controlDeviation);
-        if (abs(controlDeviation) > threshold)
-        { // Hysteresis of two points control
-            if (controlDeviation > 0)
-            { // right wheels run faster than left wheels
-                PcontrolRight = -1;
-                PcontrolLeft = 1;
-            }
-            else
-            {
-                PcontrolRight = 1;
-                PcontrolLeft = -1;
-            }
-        }
-        else
-        {
-            PcontrolRight = 0;
-            PcontrolLeft = 0;
-        }
-    }
-
-    // control for left wheels
-    if (dir == -2)
-    {
-        totalDeltaThetaRight += deltaThetaRight;
-        totalDeltaThetaLeft -= deltaThetaLeft;
-        controlDeviation = totalDeltaThetaRight - abs(totalDeltaThetaLeft);
-        // Serial.println(controlDeviation);
-        if (abs(controlDeviation) > threshold)
-        { // Hysteresis of two points control
-            if (controlDeviation > 0)
-            { // right wheels run faster than left wheels
-                PcontrolRight = 1;
-                PcontrolLeft = -1;
-            }
-            else
-            {
-                PcontrolRight = -1;
-                PcontrolLeft = 1;
-            }
-        }
-        else
-        {
-            PcontrolRight = 0;
-            PcontrolLeft = 0;
-        }
-    }
-
-    // printInfos();
-};
 
 void Movement::printInfos()
 {
@@ -383,10 +252,6 @@ void Movement::printInfos()
     Serial.print(totalThetaRight);
     Serial.print(" , totalThetaLeft: ");
     Serial.println(totalThetaLeft);
-    Serial.print("PcontrolRight: ");
-    Serial.print(PcontrolRight);
-    Serial.print(" , PcontrolLeft: ");
-    Serial.println(PcontrolLeft);
     Serial.print("totalDeltaThetaRight: ");
     Serial.print(totalDeltaThetaRight);
     Serial.print(" , totalDeltaThetaLeft: ");
@@ -484,156 +349,47 @@ double Movement::reqThetaDrehen(double angle)
     return turningDiameter / diameter * angle;
 };
 
-void Movement::forward(double distance, int rightServoSpeed, int leftServoSpeed, rcl_publisher_t &publisher, std_msgs__msg__Float32MultiArray &msg)
-{
+void Movement::runAndPublish(rcl_publisher_t &publisher, std_msgs__msg__Float32MultiArray &msg) {
     servoRight.attach(pinServoRight);
     servoLeft.attach(pinServoLeft);
-    updateDeltaThetas();
+    servoRight.writeMicroseconds(servoSpeedR);
+    servoLeft.writeMicroseconds(servoSpeedL);
+	
+	  updateDeltaThetas();
+    msg.data.data[0] = totalThetaRight;
+    msg.data.data[1] = totalThetaLeft;
+    rcl_publish(&publisher, &msg, NULL);
+}
 
-    servoRight.write(rightServoSpeed);
-    servoLeft.write(leftServoSpeed);
-
-    double reqThetaRight = totalThetaRight + reqTheta(distance);
-    double reqThetaLeft = totalThetaLeft + reqTheta(distance);
+void Movement::stopAndPublish(rcl_publisher_t &publisher, std_msgs__msg__Float32MultiArray &msg) {
+    servoRight.detach();
+    servoLeft.detach();
+	
+	// reset servo speed
+	servoSpeedR = 1500;
+	servoSpeedL = 1500;
     
-    unsigned long previousMillis = millis();
-
-    while ((totalThetaRight < reqThetaRight) || (totalThetaLeft < reqThetaLeft))
-    {
-        Pcontroller(1);
-        servoRight.write(rightServoSpeed + PcontrolRight);
-        servoLeft.write(leftServoSpeed + PcontrolLeft);
-
-        if (millis() - previousMillis >= 100)
-        {
-          previousMillis = millis();
-          msg.data.data[0] = totalThetaRight;
-          msg.data.data[1] = totalThetaLeft;
-          msg.data.data[2] = (float)(previousMillis) / 1000.0;
-          rcl_publish(&publisher, &msg, NULL);
-        }
-    }
-
-	  msg.data.data[0] = totalThetaRight;
+	  updateDeltaThetas();
+    msg.data.data[0] = totalThetaRight;
     msg.data.data[1] = totalThetaLeft;
-    msg.data.data[2] = (float)(millis()) / 1000.0;;
     rcl_publish(&publisher, &msg, NULL);
+}
 
-    servoRight.detach();
-    servoLeft.detach();
-};
-
-void Movement::backward(double distance, int rightServoSpeed, int leftServoSpeed, rcl_publisher_t &publisher, std_msgs__msg__Float32MultiArray &msg)
-{
-    servoRight.attach(pinServoRight);
-    servoLeft.attach(pinServoLeft);
-    updateDeltaThetas();
-
-    servoRight.write(rightServoSpeed);
-    servoLeft.write(leftServoSpeed);
-
-    double reqThetaRight = totalThetaRight - reqTheta(distance);
-    double reqThetaLeft = totalThetaLeft - reqTheta(distance);
-    unsigned long previousMillis = millis();
-
-    while ((totalThetaRight > reqThetaRight) || (totalThetaLeft > reqThetaLeft))
-    {
-        Pcontroller(-1);
-        servoRight.write(rightServoSpeed + PcontrolRight);
-        servoLeft.write(leftServoSpeed + PcontrolLeft);
-
-        if (millis() - previousMillis >= 200)
-        {
-          previousMillis = millis();
-          msg.data.data[0] = totalThetaRight;
-          msg.data.data[1] = totalThetaLeft;
-          msg.data.data[2] = (float)(previousMillis) / 1000.0;
-          rcl_publish(&publisher, &msg, NULL);
-        }
-    }
-
-	  msg.data.data[0] = totalThetaRight;
-    msg.data.data[1] = totalThetaLeft;
-    msg.data.data[2] = (float)(millis()) / 1000.0;
-    rcl_publish(&publisher, &msg, NULL);
-
-    servoRight.detach();
-    servoLeft.detach();
-};
-
-void Movement::turnRight(double angle, int rightServoSpeed, int leftServoSpeed, rcl_publisher_t &publisher, std_msgs__msg__Float32MultiArray &msg)
-{
-    servoRight.attach(pinServoRight);
-    servoLeft.attach(pinServoLeft);
-    updateDeltaThetas();
-
-    servoRight.write(rightServoSpeed);
-    servoLeft.write(leftServoSpeed);
-
-    double reqThetaRight = totalThetaRight - reqThetaDrehen(angle-3);
-    double reqThetaLeft = totalThetaLeft + reqThetaDrehen(angle-3);
-    unsigned long previousMillis = millis();
-
-    while ((totalThetaRight > reqThetaRight) || (totalThetaLeft < reqThetaLeft))
-    {
-        Pcontroller(2);
-        servoRight.write(rightServoSpeed + PcontrolRight);
-        servoLeft.write(leftServoSpeed + PcontrolLeft);
-
-        if (millis() - previousMillis >= 200)
-        {
-          previousMillis = millis();
-
-          msg.data.data[0] = totalThetaRight;
-          msg.data.data[1] = totalThetaLeft;
-          msg.data.data[2] = (float)(previousMillis) / 1000.0;
-          rcl_publish(&publisher, &msg, NULL);
-        }
-    }
-
-	  msg.data.data[0] = totalThetaRight;
-    msg.data.data[1] = totalThetaLeft;
-    msg.data.data[2] = (float)(millis()) / 1000.0;
-    rcl_publish(&publisher, &msg, NULL);
-
-    servoRight.detach();
-    servoLeft.detach();
-};
-
-void Movement::turnLeft(double angle, int rightServoSpeed, int leftServoSpeed, rcl_publisher_t &publisher, std_msgs__msg__Float32MultiArray &msg)
-{
-    servoRight.attach(pinServoRight);
-    servoLeft.attach(pinServoLeft);
-    updateDeltaThetas();
-
-    servoRight.write(rightServoSpeed);
-    servoLeft.write(leftServoSpeed);
-
-    double reqThetaRight = totalThetaRight + reqThetaDrehen(angle);
-    double reqThetaLeft = totalThetaLeft - reqThetaDrehen(angle);
-    unsigned long previousMillis = millis();
-
-    while ((totalThetaRight < reqThetaRight) || (totalThetaLeft > reqThetaLeft))
-    {
-        Pcontroller(-2);
-        servoRight.write(rightServoSpeed + PcontrolRight);
-        servoLeft.write(leftServoSpeed + PcontrolLeft);
-        if (millis() - previousMillis >= 200)
-        {
-          previousMillis = millis();
-
-          msg.data.data[0] = totalThetaRight;
-          msg.data.data[1] = totalThetaLeft;
-          msg.data.data[2] = (float)(previousMillis) / 1000.0;
-          rcl_publish(&publisher, &msg, NULL);
-        }
-    }
-
-	  msg.data.data[0] = totalThetaRight;
-    msg.data.data[1] = totalThetaLeft;
-    msg.data.data[2] = (float)(millis()) / 1000.0;
-    rcl_publish(&publisher, &msg, NULL);
-
-    servoRight.detach();
-    servoLeft.detach();
+void twistToServo(float v, float omega) {
+	float v_r = v + (omega * width / 100.0 / 2.0);
+	float v_l = v - (omega * width / 100.0 / 2.0);
+	
+	if (v_r > 0) {
+		servoSpeedR = constrain(int(-351.37 * v_r + 1490.8), 1398, 1473);
+	}
+	else if (v_r <0) {
+		servoSpeedR = constrain(int(-354.0 * v_r + 1520.92), 1540, 1614);
+	}
+	
+	if(v_l > 0) {
+		servoSpeedL = constrain(int(348.51 * v_l + 1522.08), 1540, 1614);
+	}
+	else if (v_l < 0) {
+		servoSpeedL = constrain(int(357.84 * v_l + 1492.08), 1398, 1473);
+	}
 }
