@@ -39,10 +39,11 @@ class SensorFusionNode(Node):
         # Robot parameters 
         self.circumference = 20.892  
         self.turning_circumference = 33.929 
+        self.temp_time = self.get_clock().now().to_msg()
 
-        # # IMU reference
+        # IMU reference
         self.last_heading = None
-        self.initial_imu_heading = None  
+        self.initial_imu_heading = None
 
         self.publish_initial_movement()
 
@@ -90,8 +91,8 @@ class SensorFusionNode(Node):
         self.get_logger().info(f'Original Encoder Orientation: {self.theta_odom:.2f}')
 
     def fuse_angles(self, theta_odom, theta_imu, weight_odom, weight_imu):
-        if 5 <= abs(theta_odom - theta_imu) <= 355:
-            return theta_odom
+        #if 5 <= abs(theta_odom - theta_imu) <= 355:
+        #    return theta_odom
         # Convert angles to radians
         rad_odom = np.radians(theta_odom)
         rad_imu = np.radians(theta_imu)
@@ -107,6 +108,7 @@ class SensorFusionNode(Node):
 
     def imu_listener_callback(self, msg):
         
+        self.temp_time = self.get_clock().now().to_msg()
         # Extract heading value
         current_heading = msg.data[0]  
 
@@ -119,7 +121,7 @@ class SensorFusionNode(Node):
         # Ignore small drifts (≤ 1.0) in heading calculation, but still publish odometry
         if abs(heading_change) >= 1.0:
             # ignore the imu noise around 8.0 and current_heading around 248
-            if 7.6 <= abs(heading_change) <= 8.4 or 247.6 <= current_heading <= 248.4:
+            if 7.5 <= abs(heading_change) <= 8.5 or current_heading >= 360:
                 current_heading = self.last_heading
             else:
                 self.theta_imu += (current_heading - self.last_heading)
@@ -133,25 +135,43 @@ class SensorFusionNode(Node):
         if self.theta_imu is not None:
             if self.orientation_change > 0:  # Turning Right
                 #self.theta = self.fuse_angles(self.theta_odom, self.theta_imu, 0.8, 0.2)
-                self.theta = self.fuse_angles(self.theta_odom, self.theta_imu, 0.8, 0.2)
+                self.theta = self.fuse_angles(self.theta_odom, self.theta_imu, 0.0, 1.0)
             elif self.orientation_change < 0:  # Turning Left
                 #self.theta = self.fuse_angles(self.theta_odom, self.theta_imu, 0.2, 0.8)
-                self.theta = self.fuse_angles(self.theta_odom, self.theta_imu, 0.2, 0.8)
+                self.theta = self.fuse_angles(self.theta_odom, self.theta_imu, 0.0, 1.0)
             else:  # Straight
-                self.theta = self.theta_odom
+                self.theta = self.theta_imu
         else:
             self.theta = self.theta_odom
         
         # Publish odometry
+        # only when going straight publish odometry 
+        #if abs(self.orientation_change) <= 3:
         self.publish_odometry()
 
     def publish_odometry(self):
+        tf_msg = TransformStamped()
+        tf_msg.header.stamp = self.temp_time
+        tf_msg.header.frame_id = "odom"
+        tf_msg.child_frame_id = "base_link"
+
         quat = quaternion_from_euler(0, 0, np.radians(self.theta))
+        
+        # Broadcast TF transformation
+        tf_msg.transform.translation.x = self.x / 100
+        tf_msg.transform.translation.y = self.y / 100
+        tf_msg.transform.translation.z = 0.0
+
+        tf_msg.transform.rotation.x = quat[0]
+        tf_msg.transform.rotation.y = quat[1]
+        tf_msg.transform.rotation.z = quat[2]
+        tf_msg.transform.rotation.w = quat[3]
+
+        self.tf_broadcaster.sendTransform(tf_msg)
+
         odom = Odometry()
-        odom.header.stamp = self.get_clock().now().to_msg()
         odom.header.frame_id = "odom"
         odom.child_frame_id = "base_link"
-
         odom.pose.pose.position.x = self.x / 100
         odom.pose.pose.position.y = self.y / 100
         odom.pose.pose.position.z = 0.0 # 2D plane
@@ -161,21 +181,6 @@ class SensorFusionNode(Node):
         )
         self.odom_publisher.publish(odom)
         
-        # Broadcast TF transformation
-        tf_msg = TransformStamped()
-        tf_msg.header.stamp = self.get_clock().now().to_msg()
-        tf_msg.header.frame_id = "odom"
-        tf_msg.child_frame_id = "base_link"
-        tf_msg.transform.translation.x = self.x / 100
-        tf_msg.transform.translation.y = self.y / 100
-        tf_msg.transform.translation.z = 0.0
-        tf_msg.transform.rotation.x = quat[0]
-        tf_msg.transform.rotation.y = quat[1]
-        tf_msg.transform.rotation.z = quat[2]
-        tf_msg.transform.rotation.w = quat[3]
-
-        self.tf_broadcaster.sendTransform(tf_msg)
-
         self.get_logger().info(f'Odometry published: x={self.x:.2f}, y={self.y:.2f}, θ={self.theta:.2f}°')
 
 
