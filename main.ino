@@ -376,20 +376,33 @@ void Movement::stopAndPublish(rcl_publisher_t &publisher, std_msgs__msg__Float32
 }
 
 void twistToServo(float v, float omega) {
-	float v_r = v + (omega * width / 100.0 / 2.0);
-	float v_l = v - (omega * width / 100.0 / 2.0);
+  if (abs(v) < 0.02) {
+    if (omega > 0.01) {
+      servoSpeedR = 1545;
+      servoSpeedL = 1545;
+    }
+    else if (omega < -0.01){
+      servoSpeedR = 1468;
+      servoSpeedL = 1468;
+    }
+  }
+  else {
+    float v_r = v - (omega * width / 100.0 / 2.0);
+    float v_l = v + (omega * width / 100.0 / 2.0);
+    
+    if (v_r > 0) {
+      servoSpeedR = constrain(int(-351.37 * v_r + 1490.8), 1300, 1490);
+    }
+    else if (v_r <0) {
+      servoSpeedR = constrain(int(-354.0 * v_r + 1520.92), 1520, 1700);
+    }
+    
+    if(v_l > 0) {
+      servoSpeedL = constrain(int(348.51 * v_l + 1522.08), 1522, 1700);
+    }
+    else if (v_l < 0) {
+      servoSpeedL = constrain(int(357.84 * v_l + 1492.08), 1300, 1492);
+    }
+  }
 	
-	if (v_r > 0) {
-		servoSpeedR = constrain(int(-351.37 * v_r + 1490.8), 1398, 1473);
-	}
-	else if (v_r <0) {
-		servoSpeedR = constrain(int(-354.0 * v_r + 1520.92), 1540, 1614);
-	}
-	
-	if(v_l > 0) {
-		servoSpeedL = constrain(int(348.51 * v_l + 1522.08), 1540, 1614);
-	}
-	else if (v_l < 0) {
-		servoSpeedL = constrain(int(357.84 * v_l + 1492.08), 1398, 1473);
-	}
 }
